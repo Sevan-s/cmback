@@ -62,11 +62,11 @@ exports.putProductById = async (req, res) => {
         if (!product) {
             return res.status(404).json({ error: 'Product not found' });
         }
-        const existingProduct = await Product.findOne({name});
+        // const existingProduct = await Product.findOne({name});
 
-        if (existingProduct) {
-            return res.status(400).json({error: 'product name already exist'});
-        }
+        // if (existingProduct) {
+        //     return res.status(400).json({error: 'product name already exist'});
+        // }
         product.name = name || product.name;
         product.price = price || product.price;
         product.description = description || product.description;
