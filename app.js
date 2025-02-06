@@ -27,6 +27,7 @@ mongoose.connect(uri,
 	})
 const port = 8000;
 const app = express();
+const allowedOrigins = ['https://cmadmindashboard.vercel.app'];
 
 app.use(cors({
 	origin: allowedOrigins
