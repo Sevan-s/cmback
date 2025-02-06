@@ -7,6 +7,8 @@ const productRouter = require('./src/routes/products/productRoutes.js');
 const userRouter = require('./src/routes/user/userRoutes.js');
 const requestMethod = require('./src/middleware/requestType.js');
 const requestUrl = require('./src/middleware/requestUrl.js');
+var cors = require('cors')
+
 require('dotenv').config();
 
 const jwt = require('jsonwebtoken');
@@ -26,6 +28,9 @@ mongoose.connect(uri,
 const port = 8000;
 const app = express();
 
+app.use(cors({
+	origin: allowedOrigins
+  }));
 app.use(express.static('public'))
 app.use(express.json()); 
 
