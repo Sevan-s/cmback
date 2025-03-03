@@ -59,10 +59,10 @@ exports.putProductById = async (req, res) => {
 
         const product = await Product.findById(productId);
 
-        if (!id || !name || !price) {
+        if (!productId || !name || !price) {
             return res.status(400).json({ message: "Données invalides" });
         }
-        
+
         if (!product) {
             return res.status(404).json({ error: 'Product not found' });
         }
