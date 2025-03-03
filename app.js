@@ -33,8 +33,8 @@ const allowedOrigins = ['https://cmadmindashboard.vercel.app'];
 // 	origin: allowedOrigins
 //   }));
 app.use(function(req, res, next) {
-    res.header("Access-Control-Allow-Origin", "*"); // Autorise toutes les origines (⚠️ peut être restreint)
-    res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS"); // Ajoute PUT ici
+    res.header("Access-Control-Allow-Origin", "*");
+    res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
     res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization");
     
     // Gérer les requêtes OPTIONS (préflight)
