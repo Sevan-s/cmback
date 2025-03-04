@@ -5,6 +5,7 @@ const timeLog = require('./src/middleware/timelog.js')
 const HelloWRouter = require('./src/routes/helloworld/helloworld.js')
 const productRouter = require('./src/routes/products/productRoutes.js');
 const userRouter = require('./src/routes/user/userRoutes.js');
+const uploadRouter = require('./src/routes/upload/upload.js');
 const requestMethod = require('./src/middleware/requestType.js');
 const requestUrl = require('./src/middleware/requestUrl.js');
 var cors = require('cors')
@@ -55,6 +56,7 @@ app.use(requestUrl);
 app.use('/helloworld', HelloWRouter);
 app.use('/products', productRouter);
 app.use('/users', userRouter);
+app.use("/upload", uploadRouter);
 
 app.listen(port, () => {
     console.log('this app listen on port ', port);
