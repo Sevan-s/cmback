@@ -2,13 +2,13 @@ const Product = require('../models/product');
 
 exports.CreateProduct = async (req, res) => {
     try {
-        const { name, price, description, shortDescription, maintenance, stock, category, imageUrl } = req.body;
-        const existingProduct = await Product.findOne({name});
+        const { name, price, description, shortDescription, maintenance, stock, category, imageUrls } = req.body;
+        const existingProduct = await Product.findOne({ name });
 
         if (existingProduct) {
-            return res.status(400).json({error: 'product name already exist'});
+            return res.status(400).json({ error: 'product name already exist' });
         }
-        const newProduct = new Product({ name, price, description, shortDescription, maintenance, stock, category, imageUrl });
+        const newProduct = new Product({ name, price, description, shortDescription, maintenance, stock, category, imageUrls });
         await newProduct.save();
         res.status(201).json({ Product: newProduct })
     } catch (error) {
@@ -54,36 +54,49 @@ exports.delProductById = async (req, res) => {
 
 exports.putProductById = async (req, res) => {
     try {
-        const { name, price, description, shortDescription, maintenance, stock, category, imageUrl } = req.body;
+        const { name, price, description, shortDescription, maintenance, stock, category, imageUrls } = req.body;
         const productId = req.params.id;
-
-        const product = await Product.findById(productId);
 
         if (!productId || !name || !price) {
             return res.status(400).json({ message: "Données invalides" });
         }
 
-        if (!product) {
+        // Prépare l'objet pour $set
+        const update = {
+            name,
+            price,
+            description,
+            shortDescription,
+            maintenance,
+            stock,
+            category
+        };
+
+        // Ajoute imageUrls si présent
+        if (imageUrls !== undefined) {
+            update.imageUrls = imageUrls;
+        }
+
+        // Prépare la query d'update
+        let updateQuery = { $set: update };
+        if (imageUrls !== undefined) {
+            updateQuery.$unset = { imageUrl: "" };
+        }
+
+        // Mets à jour en base
+        const updatedProduct = await Product.findByIdAndUpdate(
+            productId,
+            updateQuery,
+            { new: true }
+        );
+
+        if (!updatedProduct) {
             return res.status(404).json({ error: 'Product not found' });
         }
-        // const existingProduct = await Product.findOne({name});
 
-        // if (existingProduct) {
-        //     return res.status(400).json({error: 'product name already exist'});
-        // }
-        product.name = name || product.name;
-        product.price = price || product.price;
-        product.description = description || product.description;
-        product.shortDescription = shortDescription || product.shortDescription;
-        product.maintenance = maintenance || product.maintenance;
-        product.stock = stock || product.stock;
-        product.category = category || product.category;
-        product.imageUrl = imageUrl || product.imageUrl;
-
-        await product.save();
-        res.status(200).json({ Product: product });
+        res.status(200).json({ product: updatedProduct });
     } catch (error) {
         res.status(500).json({ error: 'Error updating product', details: error });
         console.log('error: ', error);
     }
-}
+};
