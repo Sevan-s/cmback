@@ -10,6 +10,7 @@ const productSchema = new mongoose.Schema({
     category: { type: String},
     imageUrls: { type: [String], default: [] },
     createdAt: { type: Date, default: Date.now },
+    options:{type: [String], default: []}
 });
 
 module.exports = mongoose.model('Product', productSchema);
