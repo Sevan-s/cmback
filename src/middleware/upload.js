@@ -23,7 +23,8 @@ const upload = multer({
       cb(null, { fieldName: file.fieldname });
     },
     key: (req, file, cb) => {
-      cb(null, `uploads/${Date.now()}-${file.originalname}`);
+      const filename = `${Date.now()}-${file.originalname}`;
+      cb(null, `uploads/shop/${filename}`); // ⬅️ préfixe voulu    },
     },
   }),
 });
