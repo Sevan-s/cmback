@@ -34,10 +34,11 @@ router.get('/images', async (req, res) => {
     });
     const data = await s3.send(command);
     const images = data.Contents
-      .filter(obj => {
-        const key = obj.Key.toLowerCase();
-        return key.endsWith('.jpg') || key.endsWith('.jpeg') || key.endsWith('.png');
-      }).map(obj => ({
+ .filter(obj => {
+    const key = obj.Key || '';
+    const lowerKey = key.toLowerCase();
+    return lowerKey.endsWith('.jpg') || lowerKey.endsWith('.jpeg') || lowerKey.endsWith('.png');
+  }).map(obj => ({
         url: `https://${bucket}.s3.amazonaws.com/${obj.Key}`,
         name: obj.Key.replace(prefix, '')
       }));
