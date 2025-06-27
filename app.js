@@ -30,7 +30,7 @@ mongoose.connect(uri,
 .catch((e)=>{
 	console.log("Something went wrong", e);
 	})
-const port = 8000;
+const port = process.env.PORT || 8000;
 const app = express();
 
 const allowedOrigins = [
