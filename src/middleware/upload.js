@@ -24,9 +24,27 @@ const upload = multer({
     },
     key: (req, file, cb) => {
       const filename = `${Date.now()}-${file.originalname}`;
-      cb(null, `uploads/shop/${filename}`); // ⬅️ préfixe voulu    },
+      cb(null, `uploads/shop/${filename}`);
     },
   }),
 });
 
-module.exports = upload;
+const uploadTissus = multer({
+  storage: multerS3({
+    s3: s3,
+    bucket: process.env.S3_BUCKET_NAME,
+    contentType: multerS3.AUTO_CONTENT_TYPE,
+    acl: "public-read",
+    metadata: (req, file, cb) => {
+      console.log(file);
+      cb(null, { fieldName: file.fieldname });
+    },
+    key: (req, file, cb) => {
+      const filename = `${Date.now()}-${file.originalname}`;
+      cb(null, `uploads/tissus/${filename}`);
+    },
+  }),
+});
+
+
+module.exports = upload, uploadTissus;
