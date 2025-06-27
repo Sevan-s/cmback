@@ -24,6 +24,8 @@ const upload = multer({
     },
     key: (req, file, cb) => {
       const filename = `${Date.now()}-${file.originalname}`;
+      console.log("[SHOP]", `uploads/shop/${filename}`);
+
       cb(null, `uploads/shop/${filename}`);
     },
   }),
@@ -41,6 +43,8 @@ const uploadTissus = multer({
     },
     key: (req, file, cb) => {
       const filename = `${Date.now()}-${file.originalname}`;
+      console.log("[TISSUS]", `uploads/tissus/${filename}`);
+
       cb(null, `uploads/tissus/${filename}`);
     },
   }),
