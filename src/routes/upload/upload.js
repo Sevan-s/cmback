@@ -1,5 +1,5 @@
 const express = require("express");
-const { upload, uploadTissus } = require('./tonfichier');
+const { upload, uploadTissus } = require("../../middleware/upload");
 const router = express.Router();
 const { S3Client, ListObjectsV2Command } = require('@aws-sdk/client-s3');
 
