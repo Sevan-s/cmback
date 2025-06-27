@@ -51,4 +51,4 @@ const uploadTissus = multer({
 });
 
 
-module.exports = upload, uploadTissus;
+module.exports = { upload, uploadTissus };
