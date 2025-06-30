@@ -2,13 +2,13 @@ const Product = require('../models/product');
 
 exports.CreateProduct = async (req, res) => {
     try {
-        const { name, price, description, shortDescription, maintenance, stock, category, imageUrls, options } = req.body;
+        const { name, price, description, shortDescription, maintenance, stock, category, imageUrls, options, associateProduct } = req.body;
         const existingProduct = await Product.findOne({ name });
 
         if (existingProduct) {
             return res.status(400).json({ error: 'product name already exist' });
         }
-        const newProduct = new Product({ name, price, description, shortDescription, maintenance, stock, category, imageUrls, options });
+        const newProduct = new Product({ name, price, description, shortDescription, maintenance, stock, category, imageUrls, options, associateProduct });
         await newProduct.save();
         res.status(201).json({ Product: newProduct })
     } catch (error) {
@@ -54,7 +54,7 @@ exports.delProductById = async (req, res) => {
 
 exports.putProductById = async (req, res) => {
     try {
-        const { name, price, description, shortDescription, maintenance, stock, category, imageUrls, options } = req.body;
+        const { name, price, description, shortDescription, maintenance, stock, category, imageUrls, options, associateProduct } = req.body;
         const productId = req.params.id;
 
         if (!productId || !name || !price) {
@@ -69,7 +69,8 @@ exports.putProductById = async (req, res) => {
             maintenance,
             stock,
             category,
-            options
+            options,
+            associateProduct
         };
 
         if (imageUrls !== undefined) {
