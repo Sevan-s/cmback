@@ -14,7 +14,6 @@ const s3 = new S3Client({
 });
 
 router.post("/", upload.array("images"), (req, res) => {
-  console.log("FICHIERS REÇUS :", req.files);
 
   if (!req.files || !req.files.length) {
     return res.status(400).json({ error: "Aucun fichier uploadé" });
@@ -24,7 +23,7 @@ router.post("/", upload.array("images"), (req, res) => {
 });
 
 router.post("/tissus", uploadTissus.array("images"), (req, res) => {
-  console.log("FICHIERS REÇUS :", req.files);
+
 
   if (!req.files || !req.files.length) {
     return res.status(400).json({ error: "Aucun fichier uploadé" });
@@ -32,7 +31,6 @@ router.post("/tissus", uploadTissus.array("images"), (req, res) => {
   const fileUrls = req.files.map(file => file.location);
   res.json({ fileUrls });
 });
-
 router.get('/images/shop', async (req, res) => {
     const bucket = process.env.S3_BUCKET_NAME;
     const prefix = "uploads/shop";

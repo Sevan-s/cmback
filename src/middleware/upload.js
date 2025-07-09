@@ -19,7 +19,6 @@ const upload = multer({
     contentType: multerS3.AUTO_CONTENT_TYPE,
     acl: "public-read",
     metadata: (req, file, cb) => {
-      console.log(file); // Log l'image reçue
       cb(null, { fieldName: file.fieldname });
     },
     key: (req, file, cb) => {
@@ -42,11 +41,12 @@ const uploadTissus = multer({
       cb(null, { fieldName: file.fieldname });
     },
     key: (req, file, cb) => {
-      const folder = req.body.folder || "uploads/tissus";
+      console.log("req : ", req.body)
+      const subfolder = req.query.folder || "default";
       const filename = `${Date.now()}-${file.originalname}`;
-      const fullPath = `${folder}/${filename}`;
+      const fullPath = `uploads/tissus/${subfolder}/${filename}`;
 
-      console.log("[TISSUS]", fullPath);
+      console.log("[TISSUS]", fullPath, subfolder);
 
       cb(null, fullPath);
     },
