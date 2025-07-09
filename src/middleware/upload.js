@@ -42,10 +42,13 @@ const uploadTissus = multer({
       cb(null, { fieldName: file.fieldname });
     },
     key: (req, file, cb) => {
+      const folder = req.body.folder || "uploads/tissus";
       const filename = `${Date.now()}-${file.originalname}`;
-      console.log("[TISSUS]", `uploads/tissus/${filename}`);
+      const fullPath = `uploads/tissus/${folder}/${filename}`;
 
-      cb(null, `uploads/tissus/${filename}`);
+      console.log("[TISSUS]", fullPath);
+
+      cb(null, fullPath);
     },
   }),
 });
