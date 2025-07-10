@@ -57,7 +57,8 @@ router.get('/images/shop', async (req, res) => {
 
   router.get('/images/tissus', async (req, res) => {
     const bucket = process.env.S3_BUCKET_NAME;
-    const prefix = "uploads/tissus";
+    const folder = req.query.folder || "";
+    const prefix = `uploads/tissus/${folder}`;
     try {
       const command = new ListObjectsV2Command({
         Bucket: bucket,
