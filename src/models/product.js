@@ -12,6 +12,7 @@ const productSchema = new mongoose.Schema({
     imageUrls: { type: [String], default: [] },
     createdAt: { type: Date, default: Date.now },
     options: { type: [String], default: [] },
+    fabrtics: {type: [String], default: []},
     associateProduct: { type: String, default: "" }
 });
 
