@@ -13,6 +13,7 @@ const productSchema = new mongoose.Schema({
     createdAt: { type: Date, default: Date.now },
     options: { type: [String], default: [] },
     fabrics: {type: [String], default: []},
+    fabricsQuantities: {type: Number, default: 1},
     associateProduct: { type: String, default: "" }
 });
 
