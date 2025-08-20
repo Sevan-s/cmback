@@ -9,6 +9,7 @@ const uploadRouter = require('./src/routes/upload/upload.js');
 const checkoutRoutes = require('./src/routes/stripe/checkout.js');
 const contactRoute = require('./src/routes/contact/contact.js');
 const colorRouter = require('./src/routes/colors/colorRoutes.js');
+const giftCardRouter = require('./src/routes/products/giftCardRoutes.js');
 const sendConfirmationRoute = require('./src/routes/contact/confirmation.js');
 const requestMethod = require('./src/middleware/requestType.js');
 const requestUrl = require('./src/middleware/requestUrl.js');
@@ -60,6 +61,7 @@ app.use(requestUrl);
 
 app.use('/helloworld', HelloWRouter);
 app.use('/products', productRouter);
+app.use('/giftcards', giftCardRouter);
 app.use('/users', userRouter);
 app.use("/upload", uploadRouter);
 app.use('/checkout', checkoutRoutes);
