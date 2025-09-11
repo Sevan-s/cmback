@@ -8,13 +8,15 @@ const productSchema = new mongoose.Schema({
     maintenance: { type: String, required: true },
     stock: { type: Number, default: 0 },
     category: { type: String },
-    subCategory: {type: [String]},
+    subCategory: { type: [String] },
     imageUrls: { type: [String], default: [] },
     createdAt: { type: Date, default: Date.now },
     options: { type: [String], default: [] },
-    fabrics: {type: [String], default: []},
-    fabricsQuantities: {type: Number, default: 1},
-    associateProduct: { type: String, default: "" }
+    fabrics: { type: [String], default: [] },
+    fabricsQuantities: { type: Number, default: 1 },
+    associateProduct: { type: String, default: "" },
+    who: { type: [String], default: "" },
+    lot: { type: [{ quantities: Number, price: Number }], default: []}
 });
 
 module.exports = mongoose.model('Product', productSchema);
