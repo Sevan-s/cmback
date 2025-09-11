@@ -15,7 +15,7 @@ const productSchema = new mongoose.Schema({
     fabrics: { type: [String], default: [] },
     fabricsQuantities: { type: Number, default: 1 },
     associateProduct: { type: String, default: "" },
-    who: { type: [String], default: "" },
+    who: { type: [String], default: [] },
     lot: { type: [{ quantities: Number, price: Number }], default: []}
 });
 
