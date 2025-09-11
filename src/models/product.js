@@ -8,7 +8,7 @@ const productSchema = new mongoose.Schema({
     maintenance: { type: String, required: true },
     stock: { type: Number, default: 0 },
     category: { type: String },
-    subCategory: {type: String},
+    subCategory: {type: [String]},
     imageUrls: { type: [String], default: [] },
     createdAt: { type: Date, default: Date.now },
     options: { type: [String], default: [] },
