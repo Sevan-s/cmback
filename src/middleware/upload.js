@@ -53,5 +53,50 @@ const uploadTissus = multer({
   }),
 });
 
+const uploadSangles = multer({
+  storage: multerS3({
+    s3: s3,
+    bucket: process.env.S3_BUCKET_NAME,
+    contentType: multerS3.AUTO_CONTENT_TYPE,
+    acl: "public-read",
+    metadata: (req, file, cb) => {
+      console.log(file);
+      cb(null, { fieldName: file.fieldname });
+    },
+    key: (req, file, cb) => {
+      console.log("req : ", req.body)
+      const subfolder = req.query.folder || "default";
+      const filename = `${Date.now()}-${file.originalname}`;
+      const fullPath = `uploads/sangles/${filename}`;
 
-module.exports = { upload, uploadTissus };
+      console.log("[Sangles]", fullPath, subfolder);
+
+      cb(null, fullPath);
+    },
+  }),
+});
+
+const uploadEtiquettes = multer({
+  storage: multerS3({
+    s3: s3,
+    bucket: process.env.S3_BUCKET_NAME,
+    contentType: multerS3.AUTO_CONTENT_TYPE,
+    acl: "public-read",
+    metadata: (req, file, cb) => {
+      console.log(file);
+      cb(null, { fieldName: file.fieldname });
+    },
+    key: (req, file, cb) => {
+      console.log("req : ", req.body)
+      const subfolder = req.query.folder || "default";
+      const filename = `${Date.now()}-${file.originalname}`;
+      const fullPath = `uploads/etiquettes/${filename}`;
+
+      console.log("[Sangles]", fullPath, subfolder);
+
+      cb(null, fullPath);
+    },
+  }),
+});
+
+module.exports = { upload, uploadTissus, uploadSangles, uploadEtiquettes };
