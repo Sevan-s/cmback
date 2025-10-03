@@ -92,6 +92,7 @@ router.get('/images/shop', async (req, res) => {
           const lowerKey = key.toLowerCase();
           return lowerKey.endsWith('.jpg') || lowerKey.endsWith('.jpeg') || lowerKey.endsWith('.png');
         }).map(obj => ({
+          id: obj.Key,
           url: `https://${bucket}.s3.amazonaws.com/${obj.Key}`,
           name: obj.Key.replace(prefix, '')
         }));
@@ -117,6 +118,7 @@ router.get('/images/shop', async (req, res) => {
           const lowerKey = key.toLowerCase();
           return lowerKey.endsWith('.jpg') || lowerKey.endsWith('.jpeg') || lowerKey.endsWith('.png');
         }).map(obj => ({
+          id: obj.Key,
           url: `https://${bucket}.s3.amazonaws.com/${obj.Key}`,
           name: obj.Key.replace(prefix, '')
         }));
@@ -142,6 +144,7 @@ router.get('/images/shop', async (req, res) => {
           const lowerKey = key.toLowerCase();
           return lowerKey.endsWith('.jpg') || lowerKey.endsWith('.jpeg') || lowerKey.endsWith('.png');
         }).map(obj => ({
+          id: obj.Key,
           url: `https://${bucket}.s3.amazonaws.com/${obj.Key}`,
           name: obj.Key.replace(prefix, '')
         }));
