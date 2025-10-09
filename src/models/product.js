@@ -1,5 +1,13 @@
 const mongoose = require('mongoose');
 
+const dimensionSchema = new mongoose.Schema(
+  {
+    label: { type: String, required: true, trim: true },
+    price: { type: Number, required: true, min: 0 },
+  },
+  { _id: true }
+);
+
 const productSchema = new mongoose.Schema({
     name: { type: String, required: true },
     price: { type: Number, required: true },
@@ -16,7 +24,8 @@ const productSchema = new mongoose.Schema({
     fabricsQuantities: { type: Number, default: 1 },
     associateProduct: { type: String, default: "" },
     who: { type: [String], default: [] },
-    lot: { type: [{ quantities: Number, price: Number }], default: []}
+    lot: { type: [{ quantities: Number, price: Number }], default: [] },
+    dimensions: { type: [dimensionSchema], default: [] },
 });
 
 module.exports = mongoose.model('Product', productSchema);
