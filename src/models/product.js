@@ -7,11 +7,12 @@ const dimensionSchema = new mongoose.Schema(
   },
   { _id: true }
 );
-
 const productSchema = new mongoose.Schema({
     name: { type: String, required: true },
     price: { type: Number, required: true },
     description: { type: String, required: true },
+    dimension: { type: String, required: true },
+    composition: { type: String, required: true },
     shortDescription: { type: String, required: true },
     maintenance: { type: String, required: true },
     stock: { type: Number, default: 0 },
