@@ -29,7 +29,7 @@ const productSchema = new mongoose.Schema({
   options: { type: [String], default: [] },
   fabrics: { type: [String], default: [] },
   fabricsQuantities: { type: Number, default: 1 },
-  associateProduct: { type: String, default: "" },
+  associateProduct: { type: [{ name: String, price: Number }], default: [] },
   who: { type: [WhoSchema], default: [] },
   lot: { type: [{ quantities: Number, price: Number }], default: [] },
   dimensions: { type: [dimensionSchema], default: [] },
