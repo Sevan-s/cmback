@@ -22,6 +22,24 @@ const bodyParser = require('body-parser');
 const bcrypt = require('bcryptjs');
 
 const uri = process.env.MONGO_URI;
+const allowedOrigins = [
+  'http://localhost:3000',
+  'https://localhost:3000',
+  'http://localhost:5173',
+  'https://cmadmindashboard.vercel.app'
+];
+const corsOptions = {
+  origin(origin, cb) {
+    if (!origin) return cb(null, true);
+    if (allowedOrigins.includes(origin)) return cb(null, true);
+    return cb(new Error("CORS: origin not allowed"));
+  },
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  optionsSuccessStatus: 204,
+  preflightContinue: false,
+};
 
 mongoose.connect(uri, 
 	{})
@@ -34,23 +52,13 @@ mongoose.connect(uri,
 const port = process.env.PORT || 8000;
 const app = express();
 
-const allowedOrigins = [
-  'http://localhost:3000',
-  'https://localhost:3000',
-  'http://localhost:5173',
-  'https://cmadmindashboard.vercel.app'
-];
-app.use(cors({
-  origin: function (origin, callback) {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization'],
-}));
+
+app.use((req, res, next) => {
+  res.header("Vary", "Origin");
+  next();
+});
+app.use(cors(corsOptions));
+app.options("*", cors(corsOptions));
   
 app.use(express.static('public'))
 app.use(express.json()); 
