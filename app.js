@@ -11,6 +11,7 @@ const contactRoute = require('./src/routes/contact/contact.js');
 const colorRouter = require('./src/routes/colors/colorRoutes.js');
 const giftCardRouter = require('./src/routes/products/giftCardRoutes.js');
 const sendConfirmationRoute = require('./src/routes/contact/confirmation.js');
+const OpionRouter = require('./src/routes/opinion/opinionRoutes.js')
 const requestMethod = require('./src/middleware/requestType.js');
 const requestUrl = require('./src/middleware/requestUrl.js');
 var cors = require('cors')
@@ -76,6 +77,7 @@ app.use('/checkout', checkoutRoutes);
 app.use('/', contactRoute);
 app.use('/', sendConfirmationRoute);
 app.use('/colors', colorRouter);
+app.use('/opinion', OpionRouter)
 
 
 app.listen(port, () => {
