@@ -27,7 +27,8 @@ const allowedOrigins = [
   'http://localhost:3000',
   'https://localhost:3000',
   'http://localhost:5173',
-  'https://cmadmindashboard.vercel.app'
+  'https://cmadmindashboard.vercel.app',
+  'https://cousu-mouche.vercel.app'
 ];
 const corsOptions = {
   origin(origin, cb) {
