@@ -26,6 +26,7 @@ router.post("/confirm", async (req, res) => {
             adresse,
             items = [],
             total: totalFromClient,
+            reduction = 0,
         } = data;
 
         const total =
@@ -178,19 +179,21 @@ router.post("/confirm", async (req, res) => {
             : "";
 
         const html = `
-      <h2>Confirmation de commande</h2>
-      <p>Merci pour votre commande.</p>
-      <p><strong>Date de commande :</strong> ${dateCommande}</p>
+        <h2>Confirmation de commande</h2>
+        <p>Merci pour votre commande.</p>
 
+        ${customerHtml}
+        ${adresseHtml}
 
-      ${customerHtml}
-      ${adresseHtml}
+        <h3>Détails des articles</h3>
+        ${itemsHtml}
 
-      <h3>Détails des articles:</h3>
-      ${itemsHtml}
-
-      <p><strong>Total :</strong> ${total.toFixed(2)} €</p>
-      <p><small>Session Stripe : ${sessionId || "N/A"}</small></p>
+        ${reduction > 0
+                ? `<p><strong>Réduction appliquée :</strong> -${reduction.toFixed(2)} €</p>`
+                : ""
+            }
+        <p><strong>Total :</strong> ${total.toFixed(2)} €</p>
+        <p><small>Session Stripe : ${sessionId || "N/A"}</small></p>
     `;
 
         const to = [customerEmail];
