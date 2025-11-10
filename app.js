@@ -12,6 +12,7 @@ const colorRouter = require('./src/routes/colors/colorRoutes.js');
 const giftCardRouter = require('./src/routes/products/giftCardRoutes.js');
 const sendConfirmationRoute = require('./src/routes/contact/confirmation.js');
 const OpionRouter = require('./src/routes/opinion/opinionRoutes.js')
+const ordersRouter = require("./src/routes/order/order.js");
 const requestMethod = require('./src/middleware/requestType.js');
 const requestUrl = require('./src/middleware/requestUrl.js');
 var cors = require('cors')
@@ -43,14 +44,14 @@ const corsOptions = {
   preflightContinue: false,
 };
 
-mongoose.connect(uri, 
-	{})
-.then(()=>{
-	console.log('connected');
-	})
-.catch((e)=>{
-	console.log("Something went wrong", e);
-	})
+mongoose.connect(uri,
+  {})
+  .then(() => {
+    console.log('connected');
+  })
+  .catch((e) => {
+    console.log("Something went wrong", e);
+  })
 const port = process.env.PORT || 8000;
 const app = express();
 
@@ -61,9 +62,9 @@ app.use((req, res, next) => {
 });
 app.use(cors(corsOptions));
 app.options("*", cors(corsOptions));
-  
+
 app.use(express.static('public'))
-app.use(express.json()); 
+app.use(express.json());
 
 app.use(timeLog);
 app.use(requestMethod);
@@ -79,8 +80,8 @@ app.use('/', contactRoute);
 app.use('/', sendConfirmationRoute);
 app.use('/colors', colorRouter);
 app.use('/opinion', OpionRouter)
-
+app.use("/api/orders", ordersRouter);
 
 app.listen(port, () => {
-    console.log('this app listen on port ', port);
+  console.log('this app listen on port ', port);
 })
