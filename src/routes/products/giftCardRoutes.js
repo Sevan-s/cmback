@@ -1,10 +1,11 @@
-const express = require('express')
-
+const express = require('express');
 const router = express.Router();
-const productController = require('../../conrtollers/giftCardController.js');
-router.post("/", productController.CreateGiftCard);
-router.get("/", productController.getAllGiftCard)
-router.get("/:code", productController.GetGiftCardByCode);
-router.delete("/:code", productController.DeleteGiftCardByCode);
+const giftCardController = require('../../conrtollers/giftCardController.js');
+
+router.post("/use/:code", giftCardController.UseGiftCardByCode);
+router.post("/", giftCardController.CreateGiftCard);
+router.get("/", giftCardController.getAllGiftCard);
+router.get("/:code", giftCardController.GetGiftCardByCode);
+router.delete("/:code", giftCardController.DeleteGiftCardByCode);
 
 module.exports = router;

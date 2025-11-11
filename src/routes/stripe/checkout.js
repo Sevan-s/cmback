@@ -29,6 +29,7 @@ router.post('/create-checkout-session', async (req, res) => {
       ],
       mode: 'payment',
       return_url: 'https://cousu-mouche.vercel.app/return?session_id={CHECKOUT_SESSION_ID}',
+      // return_url: "https://localhost:3000/return?session_id={CHECKOUT_SESSION_ID}",
     });
 
     res.send({ clientSecret: session.client_secret });

@@ -45,6 +45,49 @@ exports.CreateGiftCard = async (req, res) => {
     }
 }
 
+exports.UseGiftCardByCode = async (req, res) => {
+  try {
+    const codeParam = String(req.params.code || "").toUpperCase().trim();
+
+    const card = await giftCard.findOne({ code: codeParam });
+    if (!card) {
+      return res.status(404).json({ message: "Gift card not found" });
+    }
+
+    const now = Date.now();
+    const exp = new Date(card.expiresAt).getTime();
+
+    if (exp <= now) {
+      return res.status(410).json({
+        message: "Gift card expired",
+        code: card.code,
+        expiredAt: card.expiresAt,
+      });
+    }
+
+    if (card.redeemed) {
+      return res.status(409).json({
+        message: "Gift card already redeemed",
+        code: card.code,
+        redeemedAt: card.redeemedAt,
+      });
+    }
+
+    card.redeemed = true;
+    card.redeemedAt = new Date();
+    await card.save();
+
+    return res.status(200).json({
+      message: "Gift card redeemed successfully",
+      code: card.code,
+      amount: card.price,
+    });
+  } catch (error) {
+    console.error("error :", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
 exports.getAllGiftCard = async (req, res) => {
     try {
         const cards = await giftCard.find()
