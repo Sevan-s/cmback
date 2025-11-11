@@ -2,23 +2,38 @@ const express = require("express");
 const router = express.Router();
 const { transporter } = require("../../middleware/mailer");
 const { cleanObject } = require("../../utils/cleanObject");
+const giftCard = require("../../models/giftCard");
 
 const ADMIN_EMAILS = [
     "contact@cousumouche.fr",
     "perrine.donfut@gmail.com",
 ];
 
+function generateGiftCardCode() {
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    let code = "";
+    for (let i = 0; i < 16; i++) {
+        code += chars.charAt(Math.floor(Math.random() * chars.length));
+        if ((i + 1) % 4 === 0 && i !== 15) {
+            code += "-";
+        }
+    }
+    return code;
+}
 
+function addOneYear(date) {
+    const d = new Date(date);
+    d.setUTCFullYear(d.getUTCFullYear() + 1);
+    return d;
+}
 
 router.post("/confirm", async (req, res) => {
+    console.log("➡️ /api/orders/confirm hit");
     try {
         const raw = req.body || {};
+        console.log("raw body:", raw);
         const data = cleanObject(raw);
-        const dateCommande = new Date().toLocaleDateString("fr-FR", {
-            day: "2-digit",
-            month: "long",
-            year: "numeric",
-        });
+
         const {
             sessionId,
             customerEmail,
@@ -27,7 +42,22 @@ router.post("/confirm", async (req, res) => {
             items = [],
             total: totalFromClient,
             reduction = 0,
+            giftCardCode,
+            giftCardAmount,
         } = data;
+
+        console.log("items reçus:", JSON.stringify(items, null, 2));
+
+        const effectiveReduction =
+            typeof giftCardAmount === "number" && giftCardAmount > 0
+                ? giftCardAmount
+                : (typeof reduction === "number" ? reduction : 0);
+
+        const dateCommande = new Date().toLocaleDateString("fr-FR", {
+            day: "2-digit",
+            month: "long",
+            year: "numeric",
+        });
 
         const total =
             typeof totalFromClient === "number"
@@ -47,11 +77,88 @@ router.post("/confirm", async (req, res) => {
             });
         }
 
+        const enhancedItems = [];
+        for (const it of items) {
+            const name = (it.name || "").toLowerCase();
+            const isGiftCard =
+                name.includes("carte cadeau") ||
+                it.type === "gift_card" ||
+                it.isGiftCard === true;
+
+            if (isGiftCard) {
+                const frontGift = it.giftCardData || {};
+
+                const amount =
+                    typeof frontGift.montant === "number"
+                        ? frontGift.montant
+                        : typeof it.subTotal === "number"
+                            ? it.subTotal
+                            : typeof it.price === "number"
+                                ? it.price
+                                : 0;
+
+                let code;
+                let existing;
+                do {
+                    code = generateGiftCardCode();
+                    existing = await giftCard.findOne({ code });
+                } while (existing);
+
+                const now = new Date();
+                const expiresAt = addOneYear(now);
+
+                const newGiftCard = await giftCard.create({
+                    price: amount,
+                    code,
+                    expiresAt,
+                });
+
+                console.log("🎁 Gift card créée:", newGiftCard);
+
+                enhancedItems.push({
+                    ...it,
+                    giftCardData: {
+                        pour: frontGift.pour || "",
+                        deLaPartDe: frontGift.deLaPartDe || frontGift.delaPartDe || "",
+                        message: frontGift.message || "",
+                        montant: amount,
+                        code: newGiftCard.code,
+                        date: now.toLocaleDateString("fr-FR"),
+                        expirationDate: newGiftCard.expiresAt,
+                    },
+                });
+            } else {
+                enhancedItems.push(it);
+            }
+        }
+        if (giftCardCode) {
+            try {
+                const code = String(giftCardCode).toUpperCase().trim();
+                const card = await giftCard.findOne({ code });
+
+                if (!card) {
+                    console.warn("Gift card code not found at confirm:", code);
+                } else {
+                    const now = new Date();
+                    if (card.expiresAt <= now) {
+                        console.warn("Gift card expired at confirm:", code);
+                    } else if (card.redeemed) {
+                        console.warn("Gift card already redeemed at confirm:", code);
+                    } else {
+                        card.redeemed = true;
+                        card.redeemedAt = now;
+                        await card.save();
+                        console.log("🎟️ Gift card redeemed at confirm:", code);
+                    }
+                }
+            } catch (e) {
+                console.error("Error while redeeming gift card at confirm:", e);
+            }
+        }
         const LABELS = {
             name: "Nom du produit",
             price: "Prix (€)",
             quantity: "Quantité",
-            //   subTotal: "Sous-total (€)",
             dimension: "Taille / Dimension",
             bearEar: "Oreilles d’ours",
             fabricSelected: "Tissus sélectionnés",
@@ -61,8 +168,13 @@ router.post("/confirm", async (req, res) => {
             lot: "Lot",
             label: "Étiquette",
             strap: "Sangle",
+            code: "Code de la carte cadeau",
+            montant: "Montant",
+            value: "Valeur",
+            giftCardSended: "Mode d’envoi",
+            deLaPartDe: "De la part de",
+            pour: "Pour",
         };
-        console.log("customerEmail : ", customerEmail)
 
         const IGNORED_KEYS = [
             "product",
@@ -70,10 +182,9 @@ router.post("/confirm", async (req, res) => {
             "addedAt",
             "selectedStrap",
             "selectedLabel",
-            "giftCardData",
-            "montant",
             "gift",
-            "subTotal"
+            "giftCardData",
+            "subTotal",
         ];
 
         const cleanFilename = (str) => {
@@ -119,14 +230,19 @@ router.post("/confirm", async (req, res) => {
             }
 
             if (Array.isArray(val)) {
-                return `<ul>${val.map((v) => `<li>${formatValue(v)}</li>`).join("")}</ul>`;
+                return `<ul>${val
+                    .map((v) => `<li>${formatValue(v)}</li>`)
+                    .join("")}</ul>`;
             }
 
             if (typeof val === "object") {
                 return `<ul>${Object.entries(val)
                     .map(
                         ([k, v]) =>
-                            `<li><strong>${LABELS[k] || k}</strong> : ${formatValue(v, k)}</li>`
+                            `<li><strong>${LABELS[k] || k}</strong> : ${formatValue(
+                                v,
+                                k
+                            )}</li>`
                     )
                     .join("")}</ul>`;
             }
@@ -134,10 +250,54 @@ router.post("/confirm", async (req, res) => {
             return decodeFrench(String(val));
         };
 
-        const itemsHtml = items
+        const itemsHtml = enhancedItems
             .map((it, idx) => {
                 const isSortieDeBain =
                     it.name?.toLowerCase().includes("sortie de bain");
+                const isGiftCard =
+                    (it.name || "").toLowerCase().includes("carte cadeau") ||
+                    it.type === "gift_card" ||
+                    it.isGiftCard === true;
+
+                if (isGiftCard) {
+                    const giftData = it.giftCardData || {};
+
+                    const code = giftData.code || "—";
+                    const montant =
+                        typeof giftData.montant === "number"
+                            ? `${giftData.montant.toFixed(2)} €`
+                            : "—";
+                    const date = giftData.date || dateCommande;
+                    const expiration = giftData.expirationDate
+                        ? new Date(giftData.expirationDate).toLocaleDateString("fr-FR")
+                        : "—";
+
+                    const pour = giftData.pour || "—";
+                    const deLaPartDe =
+                        giftData.deLaPartDe || giftData.delaPartDe || "—";
+                    const message =
+                        giftData.message && giftData.message.trim()
+                            ? giftData.message
+                            : "—";
+
+                    const modeEnvoi = it.giftCardSended || "—";
+
+                    return `
+                        <div style="margin-bottom: 20px;">
+                        <h4>Carte cadeau</h4>
+                        <ul>
+                            <li><strong>Code de la carte cadeau</strong> : ${code}</li>
+                            <li><strong>Montant</strong> : ${montant}</li>
+                            <li><strong>Date d’émission</strong> : ${date}</li>
+                            <li><strong>Date d’expiration</strong> : ${expiration}</li>
+                            <li><strong>De la part de</strong> : ${deLaPartDe}</li>
+                            <li><strong>Pour</strong> : ${pour}</li>
+                            <li><strong>Message</strong> : ${message}</li>
+                            <li><strong>Mode d’envoi</strong> : ${modeEnvoi}</li>
+                        </ul>
+                        </div>
+                    `;
+                }
 
                 const lignes = Object.entries(it)
                     .filter(
@@ -147,7 +307,10 @@ router.post("/confirm", async (req, res) => {
                     )
                     .map(([key, val]) => {
                         const label = LABELS[key] || key;
-                        return `<li><strong>${label}</strong> : ${formatValue(val, key)}</li>`;
+                        return `<li><strong>${label}</strong> : ${formatValue(
+                            val,
+                            key
+                        )}</li>`;
                     })
                     .join("");
 
@@ -162,7 +325,9 @@ router.post("/confirm", async (req, res) => {
 
         const customerHtml = `
       <p><strong>Client :</strong><br/>
-      ${[customer.firstName, customer.lastName].filter(Boolean).join(" ") || ""}
+      ${[customer.firstName, customer.lastName]
+                .filter(Boolean)
+                .join(" ") || ""}
       <br/>
       ${customer.address || ""}
       <br/>
@@ -178,22 +343,31 @@ router.post("/confirm", async (req, res) => {
     `
             : "";
 
+        let discountHtml = "";
+
+        if (giftCardCode && effectiveReduction > 0) {
+            discountHtml = `
+    <p><strong>Code cadeau utilisé :</strong> ${giftCardCode}</p>
+    <p><strong>Montant de la réduction :</strong> -${effectiveReduction.toFixed(2)} €</p>
+  `;
+        } else if (effectiveReduction > 0) {
+            discountHtml = `
+    <p><strong>Réduction appliquée :</strong> -${effectiveReduction.toFixed(2)} €</p>
+  `;
+        }
         const html = `
-        <h2>Confirmation de commande</h2>
-        <p>Merci pour votre commande.</p>
+      <h2>Confirmation de commande</h2>
+      <p>Merci pour votre commande.</p>
 
-        ${customerHtml}
-        ${adresseHtml}
+      ${customerHtml}
+      ${adresseHtml}
 
-        <h3>Détails des articles</h3>
-        ${itemsHtml}
+      <h3>Détails des articles</h3>
+      ${itemsHtml}
 
-        ${reduction > 0
-                ? `<p><strong>Réduction appliquée :</strong> -${reduction.toFixed(2)} €</p>`
-                : ""
-            }
-        <p><strong>Total :</strong> ${total.toFixed(2)} €</p>
-        <p><small>Session Stripe : ${sessionId || "N/A"}</small></p>
+        ${discountHtml}
+      <p><strong>Total :</strong> ${total.toFixed(2)} €</p>
+      <p><small>Session Stripe : ${sessionId || "N/A"}</small></p>
     `;
 
         const to = [customerEmail];
@@ -206,7 +380,10 @@ router.post("/confirm", async (req, res) => {
             to,
             ...(ccList.length ? { cc: ccList } : {}),
             subject: `Confirmation de commande - ${sessionId || ""}`,
-            text: `Merci pour votre commande sur Cousu Mouche. Total : ${total.toFixed(2)} €`, html,
+            text: `Merci pour votre commande sur Cousu Mouche. Total : ${total.toFixed(
+                2
+            )} €`,
+            html,
         };
 
         const info = await transporter.sendMail(mailOptions);
