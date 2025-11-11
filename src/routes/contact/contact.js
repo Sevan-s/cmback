@@ -6,7 +6,7 @@ router.post("/contact", async (req, res) => {
   const { subject, email, message } = req.body;
 
   try {
-    const resp1 = await axios.post(
+    await axios.post(
       "https://api.brevo.com/v3/smtp/email",
       {
         sender: { email: process.env.FROM_EMAIL, name: "Formulaire CousuMouche" },
@@ -25,9 +25,8 @@ router.post("/contact", async (req, res) => {
         },
       }
     );
-    console.log("Brevo -> contact :", resp1.status, resp1.data);
 
-    const resp2 = await axios.post(
+    await axios.post(
       "https://api.brevo.com/v3/smtp/email",
       {
         sender: { email: process.env.FROM_EMAIL, name: "CousuMouche" },
@@ -50,7 +49,6 @@ router.post("/contact", async (req, res) => {
         },
       }
     );
-    console.log("Brevo -> client :", resp2.status, resp2.data);
 
     res.json({ success: true });
   } catch (error) {
