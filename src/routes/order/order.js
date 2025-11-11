@@ -358,6 +358,8 @@ router.post("/confirm", async (req, res) => {
         const html = `
       <h2>Confirmation de commande</h2>
       <p>Merci pour votre commande.</p>
+    <p><strong>Date de commande :</strong> ${dateCommande}</p>
+
 
       ${customerHtml}
       ${adresseHtml}
