@@ -16,7 +16,7 @@ router.post("/contact", async (req, res) => {
   try {
     await transporter.sendMail({
       from: `"Formulaire CousuMouche" <${process.env.MAIL_USER}>`,
-      to: "perrine.donfut@gmail.com",
+      to: "contact@cousumouche.fr",
       subject: `Message du site - ${subject}`,
       html: `
         <p><strong>De :</strong> ${email}</p>
