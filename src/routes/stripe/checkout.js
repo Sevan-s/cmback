@@ -3,7 +3,7 @@ require('dotenv').config();
 const router = express.Router();
 
 const stripe = require('stripe')(process.env.STRIPE_LIVE_SECRET_KEY);
-const FRONT_BASE_URL = "https://cousu-mouche.vercel.app";
+const FRONT_BASE_URL = "https://cousumouche.fr";
 
 router.post("/create-checkout-session", async (req, res) => {
   const { amount } = req.body;
