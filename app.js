@@ -14,6 +14,8 @@ const OpionRouter = require('./src/routes/opinion/opinionRoutes.js');
 const ordersRouter = require("./src/routes/order/order.js");
 const requestMethod = require('./src/middleware/requestType.js');
 const requestUrl = require('./src/middleware/requestUrl.js');
+const sitemapRouter = require('./src/routes/sitemap/sitemap.js');
+
 const cors = require('cors');
 require('dotenv').config();
 
@@ -87,6 +89,7 @@ app.use('/', sendConfirmationRoute);
 app.use('/colors', colorRouter);
 app.use('/opinion', OpionRouter);
 app.use("/api/orders", ordersRouter);
+app.use('/', sitemapRouter);
 
 const port = process.env.PORT || 8000;
 app.listen(port, '0.0.0.0', () => {
