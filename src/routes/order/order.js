@@ -2,7 +2,12 @@ const express = require("express");
 const router = express.Router();
 const { transporter } = require("../../middleware/mailer");
 const { cleanObject } = require("../../utils/cleanObject");
+const Product = require("../../models/product");
+const Stripe = require("stripe");
 const giftCard = require("../../models/giftCard");
+const stripe = new Stripe(process.env.STRIPE_LIVE_SECRET_KEY, {
+    apiVersion: "2024-06-20",
+});
 
 const ADMIN_EMAILS = [
     "contact@cousumouche.fr",
@@ -25,6 +30,34 @@ function addOneYear(date) {
     const d = new Date(date);
     d.setUTCFullYear(d.getUTCFullYear() + 1);
     return d;
+}
+
+async function refundPartialForSession(sessionId, refundAmountCents) {
+    if (!sessionId) {
+        console.warn("Aucun sessionId fourni pour le remboursement Stripe");
+        return;
+    }
+    if (!refundAmountCents || refundAmountCents <= 0) {
+        console.warn("Montant de remboursement invalide :", refundAmountCents);
+        return;
+    }
+
+    const session = await stripe.checkout.sessions.retrieve(sessionId);
+    if (!session.payment_intent) {
+        console.warn("Pas de payment_intent associé à la session", sessionId);
+        return;
+    }
+
+    const refund = await stripe.refunds.create({
+        payment_intent: session.payment_intent,
+        amount: Math.round(refundAmountCents),
+        reason: "requested_by_customer",
+    });
+
+    console.log(
+        `💸 Remboursement partiel Stripe lancé pour la session ${sessionId} : ${refundAmountCents} cents`
+    );
+    return refund;
 }
 
 router.post("/confirm", async (req, res) => {
@@ -155,6 +188,99 @@ router.post("/confirm", async (req, res) => {
                 console.error("Error while redeeming gift card at confirm:", e);
             }
         }
+
+        const finalItems = [];
+        let refundAmountCents = 0;
+        const refundedLines = [];
+
+        for (const it of enhancedItems) {
+            const name = (it.name || "").toLowerCase();
+            const isGiftCard =
+                name.includes("carte cadeau") ||
+                it.type === "gift_card" ||
+                it.isGiftCard === true;
+
+            if (isGiftCard) {
+                finalItems.push(it);
+                continue;
+            }
+            const productId =
+                it.product?._id || it.productId || it.id || null;
+            const productSlug = it.slug || it.productSlug || null;
+
+            let productFilter = null;
+            if (productId) {
+                productFilter = { _id: productId };
+            } else if (productSlug) {
+                productFilter = { slug: productSlug };
+            } else {
+                console.warn("Impossible de déterminer le produit pour l'item :", it);
+                finalItems.push(it);
+                continue;
+            }
+
+            const productDoc = await Product.findOne(productFilter);
+            if (!productDoc) {
+                console.warn("Produit introuvable en base pour l'item :", productFilter);
+                finalItems.push(it);
+                continue;
+            }
+
+            const quantity = Number(it.quantity) || 1;
+            if (productDoc.category !== "Stock") {
+                finalItems.push(it);
+                continue;
+            }
+            const updatedProduct = await Product.findOneAndUpdate(
+                { _id: productDoc._id, stock: { $gte: quantity } },
+                { $inc: { stock: -quantity } },
+                { new: true }
+            );
+
+            if (!updatedProduct) {
+                console.error(
+                    `Stock insuffisant pour le produit STOCK ${productDoc.slug} (stock actuel : ${productDoc.stock}, qty demandée: ${quantity})`
+                );
+                const lineTotal =
+                    Number(it.subTotal) ||
+                    (Number(it.price) || 0) * quantity ||
+                    0;
+                if (lineTotal > 0) {
+                    const lineCents = Math.round(lineTotal * 100);
+                    refundAmountCents += lineCents;
+                    refundedLines.push({
+                        name: it.name,
+                        slug: productDoc.slug,
+                        amountCents: lineCents,
+                    });
+                }
+                continue;
+            }
+
+            console.log(
+                `✅ Stock décrémenté pour ${updatedProduct.slug} : nouveau stock = ${updatedProduct.stock}`
+            );
+            finalItems.push(it);
+        }
+
+        if (refundAmountCents > 0 && sessionId) {
+            try {
+                await refundPartialForSession(sessionId, refundAmountCents);
+                console.log(
+                    "Lignes remboursées (produits Stock épuisés) :",
+                    refundedLines
+                );
+            } catch (refundErr) {
+                console.error(
+                    "Erreur lors du remboursement partiel Stripe pour produits Stock épuisés :",
+                    refundErr
+                );
+            }
+        }
+        const itemsForEmail = finalItems;
+        const refundedTotal = refundAmountCents > 0 ? refundAmountCents / 100 : 0;
+        const effectiveTotal = Math.max(0, total - refundedTotal);
+
         const LABELS = {
             name: "Nom du produit",
             price: "Prix (€)",
@@ -250,7 +376,7 @@ router.post("/confirm", async (req, res) => {
             return decodeFrench(String(val));
         };
 
-        const itemsHtml = enhancedItems
+        const itemsHtml = itemsForEmail
             .map((it, idx) => {
                 const isSortieDeBain =
                     it.name?.toLowerCase().includes("sortie de bain");
@@ -356,21 +482,26 @@ router.post("/confirm", async (req, res) => {
   `;
         }
         const html = `
-      <h2>Confirmation de commande</h2>
-      <p>Merci pour votre commande.</p>
-    <p><strong>Date de commande :</strong> ${dateCommande}</p>
+            <h2>Confirmation de commande</h2>
+            <p>Merci pour votre commande.</p>
+            <p><strong>Date de commande :</strong> ${dateCommande}</p>
 
+            ${customerHtml}
+            ${adresseHtml}
 
-      ${customerHtml}
-      ${adresseHtml}
+            <h3>Détails des articles</h3>
+            ${itemsHtml}
 
-      <h3>Détails des articles</h3>
-      ${itemsHtml}
-
-        ${discountHtml}
-      <p><strong>Total :</strong> ${total.toFixed(2)} €</p>
-      <p><small>Session Stripe : ${sessionId || "N/A"}</small></p>
-    `;
+            ${discountHtml}
+            ${refundedTotal > 0
+                            ? `<p><strong>Remboursement pour produit(s) en Stock épuisé(s) :</strong> -${refundedTotal.toFixed(
+                                2
+                            )} €</p>`
+                            : ""
+                        }
+            <p><strong>Total final :</strong> ${effectiveTotal.toFixed(2)} €</p>
+            <p><small>Session Stripe : ${sessionId || "N/A"}</small></p>
+            `;
 
         const to = [customerEmail];
         const ccList = ADMIN_EMAILS.filter(
