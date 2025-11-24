@@ -164,6 +164,7 @@ router.post("/confirm", async (req, res) => {
                 enhancedItems.push(it);
             }
         }
+
         if (giftCardCode) {
             try {
                 const code = String(giftCardCode).toUpperCase().trim();
@@ -263,23 +264,39 @@ router.post("/confirm", async (req, res) => {
             finalItems.push(it);
         }
 
+        const itemsForEmail = finalItems;
+        const refundedTotal = refundAmountCents > 0 ? refundAmountCents / 100 : 0;
+        const effectiveTotal = Math.max(0, total - refundedTotal);
         if (refundAmountCents > 0 && sessionId) {
             try {
-                await refundPartialForSession(sessionId, refundAmountCents);
-                console.log(
-                    "Lignes remboursées (produits Stock épuisés) :",
-                    refundedLines
-                );
+                if (finalItems.length === 0) {
+                    const session = await stripe.checkout.sessions.retrieve(sessionId);
+
+                    if (!session.payment_intent) {
+                        console.warn("Pas de payment_intent pour la session", sessionId);
+                    } else {
+                        await stripe.refunds.create({
+                            payment_intent: session.payment_intent,
+                            reason: "requested_by_customer",
+                        });
+                        console.log(
+                            `💸 Remboursement TOTAL Stripe lancé pour la session ${sessionId}`
+                        );
+                    }
+                } else {
+                    await refundPartialForSession(sessionId, refundAmountCents);
+                    console.log(
+                        "Lignes remboursées (produits Stock épuisés) :",
+                        refundedLines
+                    );
+                }
             } catch (refundErr) {
                 console.error(
-                    "Erreur lors du remboursement partiel Stripe pour produits Stock épuisés :",
+                    "Erreur lors du remboursement Stripe pour produits Stock épuisés :",
                     refundErr
                 );
             }
         }
-        const itemsForEmail = finalItems;
-        const refundedTotal = refundAmountCents > 0 ? refundAmountCents / 100 : 0;
-        const effectiveTotal = Math.max(0, total - refundedTotal);
 
         const LABELS = {
             name: "Nom du produit",
@@ -494,11 +511,11 @@ router.post("/confirm", async (req, res) => {
 
             ${discountHtml}
             ${refundedTotal > 0
-                            ? `<p><strong>Remboursement pour produit(s) en Stock épuisé(s) :</strong> -${refundedTotal.toFixed(
-                                2
-                            )} €</p>`
-                            : ""
-                        }
+                ? `<p><strong>Remboursement pour produit(s) en Stock épuisé(s) :</strong> -${refundedTotal.toFixed(
+                    2
+                )} €</p>`
+                : ""
+            }
             <p><strong>Total final :</strong> ${effectiveTotal.toFixed(2)} €</p>
             <p><small>Session Stripe : ${sessionId || "N/A"}</small></p>
             `;
