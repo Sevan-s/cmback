@@ -265,11 +265,11 @@ router.post("/confirm", async (req, res) => {
         }
 
         let refundedTotal = 0;
+        let isFullyRefunded = false;
         if (refundAmountCents > 0 && sessionId) {
             try {
                 if (finalItems.length === 0) {
                     const session = await stripe.checkout.sessions.retrieve(sessionId);
-
                     if (!session.payment_intent) {
                         console.warn("Pas de payment_intent pour la session", sessionId);
                     } else {
@@ -281,6 +281,7 @@ router.post("/confirm", async (req, res) => {
                             `💸 Remboursement TOTAL Stripe lancé pour la session ${sessionId}`
                         );
                         refundedTotal = total;
+                        isFullyRefunded = true;
                     }
                 } else {
                     await refundPartialForSession(sessionId, refundAmountCents);
@@ -491,17 +492,38 @@ router.post("/confirm", async (req, res) => {
 
         if (giftCardCode && effectiveReduction > 0) {
             discountHtml = `
-    <p><strong>Code cadeau utilisé :</strong> ${giftCardCode}</p>
-    <p><strong>Montant de la réduction :</strong> -${effectiveReduction.toFixed(2)} €</p>
-  `;
+            <p><strong>Code cadeau utilisé :</strong> ${giftCardCode}</p>
+            <p><strong>Montant de la réduction :</strong> -${effectiveReduction.toFixed(2)} €</p>
+            `;
         } else if (effectiveReduction > 0) {
             discountHtml = `
     <p><strong>Réduction appliquée :</strong> -${effectiveReduction.toFixed(2)} €</p>
   `;
         }
+
+        let refundHtml = "";
+        if (refundedTotal > 0) {
+            if (isFullyRefunded) {
+                refundHtml = `
+                <p><strong>Votre commande a été intégralement remboursée et donc annulée.</strong> Montant remboursé : -${refundedTotal.toFixed(2)} €</p>
+                `;
+            } else {
+                refundHtml = `
+      <p><strong>Remboursement pour produit(s) en Stock épuisé(s) :</strong> -${refundedTotal.toFixed(2)} €</p>
+    `;
+            }
+        }
+
+        const titleText = isFullyRefunded
+            ? "Commande annulée"
+            : "Confirmation de commande";
+
         const html = `
-            <h2>Confirmation de commande</h2>
-            <p>Merci pour votre commande.</p>
+                <h2>${titleText}</h2>
+                <p>${isFullyRefunded
+                ? "Votre commande a été annulée car un ou plusieurs produits en stock n’étaient plus disponibles. Vous serez remboursé(e) sur votre moyen de paiement."
+                : "Merci pour votre commande."
+            }</p>
             <p><strong>Date de commande :</strong> ${dateCommande}</p>
 
             ${customerHtml}
@@ -511,12 +533,7 @@ router.post("/confirm", async (req, res) => {
             ${itemsHtml}
 
             ${discountHtml}
-            ${refundedTotal > 0
-                ? `<p><strong>Remboursement pour produit(s) en Stock épuisé(s) :</strong> -${refundedTotal.toFixed(
-                    2
-                )} €</p>`
-                : ""
-            }
+            ${refundHtml}
             <p><strong>Total final :</strong> ${effectiveTotal.toFixed(2)} €</p>
             <p><small>Session Stripe : ${sessionId || "N/A"}</small></p>
             `;
@@ -530,10 +547,14 @@ router.post("/confirm", async (req, res) => {
             from: process.env.MAIL_FROM || process.env.SMTP_USER,
             to,
             ...(ccList.length ? { cc: ccList } : {}),
-            subject: `Confirmation de commande - ${sessionId || ""}`,
-            text: `Merci pour votre commande sur Cousu Mouche. Total : ${total.toFixed(
-                2
-            )} €`,
+            subject: `${isFullyRefunded ? "Commande annulée" : "Confirmation de commande"} - ${sessionId || ""}`,
+            text: isFullyRefunded
+                ? `Votre commande a été annulée et remboursée. Montant remboursé : ${refundedTotal.toFixed(
+                    2
+                )} €`
+                : `Merci pour votre commande sur Cousu Mouche. Total final : ${effectiveTotal.toFixed(
+                    2
+                )} €`,
             html,
         };
 
