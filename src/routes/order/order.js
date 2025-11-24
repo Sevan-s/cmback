@@ -264,9 +264,7 @@ router.post("/confirm", async (req, res) => {
             finalItems.push(it);
         }
 
-        const itemsForEmail = finalItems;
         let refundedTotal = 0;
-        const effectiveTotal = Math.max(0, total - refundedTotal);
         if (refundAmountCents > 0 && sessionId) {
             try {
                 if (finalItems.length === 0) {
@@ -299,7 +297,8 @@ router.post("/confirm", async (req, res) => {
                 );
             }
         }
-
+        const itemsForEmail = finalItems;
+        const effectiveTotal = Math.max(0, total - refundedTotal);
         const LABELS = {
             name: "Nom du produit",
             price: "Prix (€)",
