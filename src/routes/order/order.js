@@ -265,7 +265,7 @@ router.post("/confirm", async (req, res) => {
         }
 
         const itemsForEmail = finalItems;
-        const refundedTotal = refundAmountCents > 0 ? refundAmountCents / 100 : 0;
+        let refundedTotal = 0;
         const effectiveTotal = Math.max(0, total - refundedTotal);
         if (refundAmountCents > 0 && sessionId) {
             try {
@@ -282,6 +282,7 @@ router.post("/confirm", async (req, res) => {
                         console.log(
                             `💸 Remboursement TOTAL Stripe lancé pour la session ${sessionId}`
                         );
+                        refundedTotal = total;
                     }
                 } else {
                     await refundPartialForSession(sessionId, refundAmountCents);
@@ -289,6 +290,7 @@ router.post("/confirm", async (req, res) => {
                         "Lignes remboursées (produits Stock épuisés) :",
                         refundedLines
                     );
+                    refundedTotal = refundAmountCents / 100;
                 }
             } catch (refundErr) {
                 console.error(
