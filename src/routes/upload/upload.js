@@ -1,7 +1,7 @@
 const express = require("express");
 const { upload, uploadTissus, uploadSangles, uploadEtiquettes } = require("../../middleware/upload");
 const router = express.Router();
-const { S3Client, ListObjectsV2Command } = require('@aws-sdk/client-s3');
+const { S3Client, ListObjectsV2Command, DeleteObjectCommand } = require("@aws-sdk/client-s3");
 
 require('dotenv').config();
 
@@ -37,24 +37,30 @@ router.delete("/images/tissus", async (req, res) => {
     const bucket = process.env.S3_BUCKET_NAME;
     const { key } = req.query;
 
-    if (!key) {
-      return res.status(400).json({ error: "Paramètre 'key' manquant" });
-    }
+    console.log("DELETE /images/tissus", { bucket, key });
+
+    if (!bucket) return res.status(500).json({ error: "S3_BUCKET_NAME manquant" });
+    if (!key) return res.status(400).json({ error: "Paramètre 'key' manquant" });
 
     if (!key.startsWith("uploads/tissus/")) {
       return res.status(403).json({ error: "Suppression non autorisée" });
     }
 
-    const command = new DeleteObjectCommand({
-      Bucket: bucket,
-      Key: key,
-    });
-
-    await s3.send(command);
+    await s3.send(
+      new DeleteObjectCommand({
+        Bucket: bucket,
+        Key: key,
+      })
+    );
 
     return res.json({ ok: true, deletedKey: key });
   } catch (error) {
-    return res.status(500).json({ error: error.message });
+    console.error("DELETE tissus error:", error);
+    return res.status(500).json({
+      error: error.message,
+      name: error.name,
+      code: error.code,
+    });
   }
 });
 
