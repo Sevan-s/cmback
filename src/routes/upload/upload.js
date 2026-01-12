@@ -32,6 +32,32 @@ router.post("/tissus", uploadTissus.array("images"), (req, res) => {
   res.json({ fileUrls });
 });
 
+router.delete("/images/tissus", async (req, res) => {
+  try {
+    const bucket = process.env.S3_BUCKET_NAME;
+    const { key } = req.query;
+
+    if (!key) {
+      return res.status(400).json({ error: "Paramètre 'key' manquant" });
+    }
+
+    if (!key.startsWith("uploads/tissus/")) {
+      return res.status(403).json({ error: "Suppression non autorisée" });
+    }
+
+    const command = new DeleteObjectCommand({
+      Bucket: bucket,
+      Key: key,
+    });
+
+    await s3.send(command);
+
+    return res.json({ ok: true, deletedKey: key });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
 router.post("/sangles", uploadSangles.array("images"), (req, res) => {
 
 
